@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         ImageView imagen = (ImageView) findViewById(R.id.imagen);
         BitmapDrawable drawable = (BitmapDrawable) imagen.getDrawable();
         Bitmap bitmap = drawable.getBitmap();
-        bitmap = scaleBitmapDown(bitmap, 800);
+        //bitmap = scaleBitmapDown(bitmap, 800);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream);
         byte[] imageInByte = stream.toByteArray();
@@ -178,79 +178,74 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void ProcesarRostro(View View) {
+    public void ProcesarRostro(View View){
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
-                BatchAnnotateImagesRequest batchRequest = setBatchRequest("FACE_DETECTION", getImageToProcess());
+                BatchAnnotateImagesRequest batchRequest =
+                        setBatchRequest("FACE_DETECTION", getImageToProcess());
                 try {
                     Vision.Images.Annotate annotateRequest = vision.images().annotate(batchRequest);
                     annotateRequest.setDisableGZipContent(true);
                     BatchAnnotateImagesResponse response = annotateRequest.execute();
 
-                    //La manera como procesa la respuesta esto es para rostro
-                    List<FaceAnnotation> faces = response.getResponses().get(0).getFaceAnnotations();
-                    int numberOfFaces = faces.size();
-                    String likelihoods = "";
+                    List<FaceAnnotation> faces = response.getResponses().get(0).getFaceAnnotations(); int numberOfFaces = faces.size();
+                    String likelihoods = "", marco="";
                     FaceAnnotation rostro;
-                    Vertex vertice1, vertice2;
+                    Vertex vertice1,vertice2 ;
 
-                    ImageView imagen = (ImageView) findViewById(R.id.imagen);
+                    ImageView imagen = (ImageView)findViewById(R.id.imagen);
                     BitmapDrawable drawable = (BitmapDrawable) imagen.getDrawable();
-                    Bitmap bitmap = drawable.getBitmap();
-
+                    Bitmap bitmap = drawable.getBitmap().copy(Bitmap.Config.ARGB_8888,true);
                     Canvas canvas = new Canvas(bitmap);
-
                     Paint paint = new Paint();
-                    paint.setColor(Color.BLUE);
-                    paint.setStrokeWidth(50);
+                    paint.setColor(Color.BLUE);  paint.setStrokeWidth(10);
                     paint.setTextSize(10);
-
-
-                    for (int i = 0; i < numberOfFaces; i++) {
+                    float[] puntos;
+                    for(int i=0; i<numberOfFaces; i++){
                         rostro = faces.get(i);
-                        float[] puntos;
-
                         int j;
-                        for (j = 0; j < rostro.getBoundingPoly().getVertices().size(); j++) {
-                            if (j > 0) {
+                        for(j=0; j<rostro.getBoundingPoly().getVertices().size(); j++) {
+                            if(j>0){
                                 vertice1 = rostro.getBoundingPoly().getVertices().get(j);
-                                vertice2 = rostro.getBoundingPoly().getVertices().get(j - 1);
-                                if (vertice1.getX() != null && vertice1.getY() != null &&
-                                        vertice2.getX() != null && vertice2.getY() != null) {
+                                vertice2 = rostro.getBoundingPoly().getVertices().get(j-1);
+                                if(vertice1.getX() !=null && vertice1.getY()!=null
+                                        && vertice2.getX() !=null && vertice2.getY()!=null){
                                     canvas.drawLine(vertice1.getX(), vertice1.getY(),
                                             vertice2.getX(), vertice2.getY(), paint);
                                 }
                             }
-
                         }
+
                         vertice1 = rostro.getBoundingPoly().getVertices().get(j-1);
                         vertice2 = rostro.getBoundingPoly().getVertices().get(0);
-                        if (vertice1.getY() != null && vertice1.getX() != null && vertice2.getY() != null && vertice2.getX() != null){
-                            canvas.drawLine(vertice1.getX(),vertice1.getY(),
-                                    vertice2.getX(),vertice2.getY(),paint);
+                        if(vertice1.getX() !=null && vertice1.getY()!=null
+                                && vertice2.getX() !=null && vertice2.getY()!=null){
+                            canvas.drawLine(vertice1.getX(), vertice1.getY(),
+                                    vertice2.getX(), vertice2.getY(), paint);
                         }
 
-                        canvas.drawText(rostro.getUnknownKeys().get("Sex").toString(),vertice2.getX(),vertice1.getY(),paint);
-
-                        //lo otro
-                        likelihoods += "\n Rostro " + i + " " + faces.get(i).getJoyLikelihood();
+                        canvas.drawText("Genero" , vertice2.getX(),vertice1.getY()+20, paint);
+                        likelihoods += "\n Rostro " + i + " " + rostro.getJoyLikelihood() ;
                     }
-                    final String message = "Esta imagen tiene " + numberOfFaces + " rostros " + likelihoods;
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TextView imageDetail = (TextView) findViewById(R.id.textView2);
-                            imageDetail.setText(message.toString());
-                        }
-                    });
+                    imagen.setImageBitmap(bitmap);
+                    final String message = "Esta imagen tiene " + numberOfFaces + " rostros " + likelihoods;
+                    runOnUiThread(new Runnable() { @Override
+                    public void run() {
+                        TextView imageDetail = (TextView)findViewById(R.id.textView2);
+                        imageDetail.setText(message.toString());
+                    } });
+
+
+
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
+
     }
 
 }
